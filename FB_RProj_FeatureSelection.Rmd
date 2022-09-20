@@ -1,0 +1,129 @@
+---
+title: "FB_RProj_FeatureSelection"
+author: "Michael Harvey"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r}
+#install and load packages
+
+#install.packages("caret")
+#install.packages("randomForest")
+
+library(caret)
+library(ggplot2)
+library(tidyverse)
+library(randomForest)
+
+```
+
+```{r}
+#select the control options for the recursive feature elimination
+
+fb_rfe_control <- rfeControl(functions = rfFuncs,
+                      method = "repeatedcv",
+                      repeats = 5,
+                      number = 10)
+
+```
+
+```{r}
+#create the training and test data sets for the first target variable ('Facebook Break')
+
+fb_predictors <- fb_data_cleaned_and_imputed %>%
+  select(-SNSUSER_W35, -FB5A_W35, -FB5B_W35, -QKEY, -SNSA_W35, -LANGUAGE_W35, -F_INTUSER_FINAL) %>%
+  as.data.frame()
+
+fb_target_break <- fb_data_cleaned_and_imputed$FB5A_W35
+
+set.seed(34)
+train_break <- createDataPartition(fb_target_break, p = .80, list = FALSE)[ ,1]
+
+fb_predictors_break_train <- fb_predictors[ train_break, ]
+fb_predictors_break_test <- fb_predictors[-train_break, ]
+
+fb_target_break_train <- fb_target_break[ train_break]
+fb_target_break_test <- fb_target_break[-train_break]
+  
+```
+
+```{r}
+#create the training and test data sets for the second target variable ('Facebook Deleted')
+
+fb_target_deleted <- fb_data_cleaned_and_imputed$FB5B_W35
+
+set.seed(34)
+train_deleted <- createDataPartition(fb_target_deleted, p = .80, list = FALSE)[ ,1]
+
+fb_predictors_deleted_train <- fb_predictors[ train_deleted, ]
+fb_predictors_deleted_test <- fb_predictors[-train_deleted, ]
+
+fb_target_deleted_train <- fb_target_deleted[ train_deleted]
+fb_target_deleted_test <- fb_target_deleted[-train_deleted]
+
+```
+
+```{r}
+#implement feature selection with RFE for the first target variable ('Facebook Break') and plot results
+
+fb_rfe_result_break <- rfe(x = fb_predictors_break_train,
+                           y = fb_target_break_train,
+                           sizes = c(1:5, 10, 15, 20, 25, 30, 35, 40, 45, 50),
+                           rfeControl = fb_rfe_control)
+
+fb_rfe_result_break
+
+predictors(fb_rfe_result_break)
+
+ggplot(data = fb_rfe_result_break, metric = "Accuracy") +
+  theme_light()
+
+ggplot(data = fb_rfe_result_break, metric = "Kappa") +
+  theme_light()
+
+```
+
+```{r}
+#select only the variables chosen in the RFE and save the data
+
+fb_data_break <- fb_data_cleaned_and_imputed %>%
+  select(QKEY, SNSFRA_W35, FB2_W35, SM1F_W35, SM1E_W35, FB4A_W35, F_RACECMB_RECRUITMENT, SM1C_W35, SM8B_W35, FB4B_W35, F_RACETHN_RECRUITMENT, TC2B_W35, FB5D_W35, SM8C_W35, F_MARITAL_FINAL, SM6A_W35, TC2C_W35, SM9B_W35, TC4_W35, SM7_W35, SM1D_W35, SM5B_W35, F_EDUCCAT2_FINAL, F_AGECAT_FINAL, SM12B_W35, SM2C_W35, F_INCOME_RECODE_FINAL, SM13C_W35, FB5C_W35, F_PARTY_FINAL, SM9A_W35, FB5A_W35)
+
+fb_data_break
+
+save(fb_data_break, file = "FB_Data_Break_2022-09-19.Rdata")
+
+```
+
+```{r}
+#implement feature selection with RFE for the second target variable ('Facebook Deleted') and plot results
+
+fb_rfe_result_deleted <- rfe(x = fb_predictors_deleted_train,
+                           y = fb_target_deleted_train,
+                           sizes = c(1:5, 10, 15, 20, 25, 30, 35, 40, 45, 50),
+                           rfeControl = fb_rfe_control)
+
+fb_rfe_result_deleted
+
+predictors(fb_rfe_result_deleted)
+
+ggplot(data = fb_rfe_result_deleted, metric = "Accuracy") +
+  theme_light()
+
+ggplot(data = fb_rfe_result_deleted, metric = "Kappa") +
+  theme_light()
+
+```
+
+```{r}
+#select only the variables chosen in the RFE and save the data
+
+fb_data_deleted <- fb_data_cleaned_and_imputed %>%
+  select(QKEY, F_AGECAT_FINAL, SNSFRA_W35, F_RACECMB_RECRUITMENT, SM1F_W35, FB5D_W35, FB5C_W35, TC4_W35, SNSJ_W35, FB3C6_W35, F_RACETHN_RECRUITMENT, F_REG_FINAL, F_MARITAL_FINAL, SM1E_W35, FB3B_W35, TC6A_W35, SM10B_W35, WEIGHT_W35, SM9A_W35, SM2C_W35, SM14B_W35, SM8C_W35, SM6B_W35, SM1C_W35, F_INCOME_RECODE_FINAL, F_PARTY_FINAL, FB5B_W35)
+
+fb_data_deleted
+
+save(fb_data_deleted, file = "FB_Data_Deleted_2022-09-19.Rdata")
+
+```

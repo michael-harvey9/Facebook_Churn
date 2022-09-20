@@ -1,0 +1,299 @@
+---
+title: "FB_RProj_Cleaning_Imputing_2022-08-25"
+author: "Michael Harvey"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+#install and load packages
+
+#install.packages("sjmisc")
+
+library(tidyverse)
+library(haven)
+library(sjmisc)
+library(mice)
+
+```
+
+```{r}
+#import data file
+
+fb_data <- read_sav("FB_RProj_Data.sav")
+
+```
+
+```{r}
+#remove irrelevant variables
+
+fb_data <- fb_data %>%
+  select(-c(YT1A_W35:V4Q4_Refused_W35))
+
+```
+
+```{r}
+#change variable types
+
+fb_data <- fb_data %>%
+  mutate(across(everything(), to_label))
+
+fb_data$QKEY <- as.character(fb_data$QKEY)
+
+fb_data$WEIGHT_W35 <- as.numeric(fb_data$WEIGHT_W35)
+
+```
+
+```{r}
+#create factors and order levels
+
+fb_data$ECIMPA_W35 <- factor(fb_data$ECIMPA_W35, order = TRUE, levels = c("Not enough power and influence", "About the right amount", "Too much power and influence"))
+
+fb_data$ECIMPB_W35 <- factor(fb_data$ECIMPB_W35, order = TRUE, levels = c("Not enough power and influence", "About the right amount", "Too much power and influence"))
+
+fb_data$ECIMPC_W35 <- factor(fb_data$ECIMPC_W35, order = TRUE, levels = c("Not enough power and influence", "About the right amount", "Too much power and influence"))
+
+fb_data$ECIMPD_W35 <- factor(fb_data$ECIMPD_W35, order = TRUE, levels = c("Not enough power and influence", "About the right amount", "Too much power and influence"))
+
+fb_data$ECIMPE_W35 <- factor(fb_data$ECIMPE_W35, order = TRUE, levels = c("Not enough power and influence", "About the right amount", "Too much power and influence"))
+
+fb_data$ECIMPF_W35 <- factor(fb_data$ECIMPF_W35, order = TRUE, levels = c("Not enough power and influence", "About the right amount", "Too much power and influence"))
+
+fb_data$ECIMPG_W35 <- factor(fb_data$ECIMPG_W35, order = TRUE, levels = c("Not enough power and influence", "About the right amount", "Too much power and influence"))
+
+fb_data$ECIMPH_W35 <- factor(fb_data$ECIMPH_W35, order = TRUE, levels = c("Not enough power and influence", "About the right amount", "Too much power and influence"))
+
+fb_data$TC2A_W35 <- factor(fb_data$TC2A_W35, order = TRUE, levels = c("Hardly ever", "Some of the time", "Most of the time", "Just about always"))
+
+fb_data$TC4_W35 <- factor(fb_data$TC4_W35, order = TRUE, levels = c("Less ethical", "About as ethical as other companies", "More ethical"))
+
+fb_data$TC5_W35 <- factor(fb_data$TC5_W35, order = TRUE, levels = c("Less than they are now", "About the same as they are now", "More than they are now"))
+
+fb_data$SNSFRA_W35 <- factor(fb_data$SNSFRA_W35, order = TRUE, levels = c("Less often", "About once a day", "Several times a day"))
+
+fb_data$SNSFRB_W35 <- factor(fb_data$SNSFRB_W35, order = TRUE, levels = c("Less often", "About once a day", "Several times a day"))
+
+fb_data$SM1A_W35 <- factor(fb_data$SM1A_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$SM1B_W35 <- factor(fb_data$SM1B_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$SM1C_W35 <- factor(fb_data$SM1C_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$SM1D_W35 <- factor(fb_data$SM1D_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$SM1E_W35 <- factor(fb_data$SM1E_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$SM1F_W35 <- factor(fb_data$SM1F_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$SM2A_W35 <- factor(fb_data$SM2A_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$SM2B_W35 <- factor(fb_data$SM2B_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$SM2C_W35 <- factor(fb_data$SM2C_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$SM2D_W35 <- factor(fb_data$SM2D_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$SM4A_W35 <- factor(fb_data$SM4A_W35, order = TRUE, levels = c("Very easy", "Somewhat easy", "Somewhat difficult", "Very difficult"))
+
+fb_data$SM4B_W35 <- factor(fb_data$SM4B_W35, order = TRUE, levels = c("Very easy", "Somewhat easy", "Somewhat difficult", "Very difficult"))
+
+fb_data$SM4C_W35 <- factor(fb_data$SM4C_W35, order = TRUE, levels = c("Very easy", "Somewhat easy", "Somewhat difficult", "Very difficult"))
+
+fb_data$SM4D_W35 <- factor(fb_data$SM4D_W35, order = TRUE, levels = c("Very easy", "Somewhat easy", "Somewhat difficult", "Very difficult"))
+
+fb_data$SM5A_W35 <- factor(fb_data$SM5A_W35, order = TRUE, levels = c("Not acceptable at all", "Not very acceptable", "Somewhat acceptable", "Very acceptable"))
+
+fb_data$SM5B_W35 <- factor(fb_data$SM5B_W35, order = TRUE, levels = c("Not acceptable at all", "Not very acceptable", "Somewhat acceptable", "Very acceptable"))
+
+fb_data$SM5C_W35 <- factor(fb_data$SM5C_W35, order = TRUE, levels = c("Not acceptable at all", "Not very acceptable", "Somewhat acceptable", "Very acceptable"))
+
+fb_data$SM5D_W35 <- factor(fb_data$SM5D_W35, order = TRUE, levels = c("Not acceptable at all", "Not very acceptable", "Somewhat acceptable", "Very acceptable"))
+
+fb_data$SM7_W35 <- factor(fb_data$SM7_W35, order = TRUE, levels = c("Not at all likely", "Not very likely", "Somewhat likely", "Very likely"))
+
+fb_data$SM9A_W35 <- factor(fb_data$SM9A_W35, order = TRUE, levels = c("Not at all well", "Not too well", "Somewhat well", "Very well"))
+
+fb_data$SM9B_W35 <- factor(fb_data$SM9B_W35, order = TRUE, levels = c("Not at all well", "Not too well", "Somewhat well", "Very well"))
+
+fb_data$SM9C_W35 <- factor(fb_data$SM9C_W35, order = TRUE, levels = c("Not at all well", "Not too well", "Somewhat well", "Very well"))
+
+fb_data$SM9D_W35 <- factor(fb_data$SM9D_W35, order = TRUE, levels = c("Not at all well", "Not too well", "Somewhat well", "Very well"))
+
+fb_data$SM9E_W35 <- factor(fb_data$SM9E_W35, order = TRUE, levels = c("Not at all well", "Not too well", "Somewhat well", "Very well"))
+
+fb_data$SM12A_W35 <- factor(fb_data$SM12A_W35, order = TRUE, levels = c("Not important at all", "Not very important", "Somewhat important", "Very important"))
+
+fb_data$SM12B_W35 <- factor(fb_data$SM12B_W35, order = TRUE, levels = c("Not important at all", "Not very important", "Somewhat important", "Very important"))
+
+fb_data$SM12C_W35 <- factor(fb_data$SM12C_W35, order = TRUE, levels = c("Not important at all", "Not very important", "Somewhat important", "Very important"))
+
+fb_data$SM13A_W35 <- factor(fb_data$SM13A_W35, order = TRUE, levels = c("Not important at all", "Not very important", "Somewhat important", "Very important"))
+
+fb_data$SM13B_W35 <- factor(fb_data$SM13B_W35, order = TRUE, levels = c("Not important at all", "Not very important", "Somewhat important", "Very important"))
+
+fb_data$SM13C_W35 <- factor(fb_data$SM13C_W35, order = TRUE, levels = c("Not important at all", "Not very important", "Somewhat important", "Very important"))
+
+fb_data$SM14A_W35 <- factor(fb_data$SM14A_W35, order = TRUE, levels = c("None", "Only a little", "Some", "A great deal"))
+
+fb_data$SM14B_W35 <- factor(fb_data$SM14B_W35, order = TRUE, levels = c("None", "Only a little", "Some", "A great deal"))
+
+fb_data$SM14C_W35 <- factor(fb_data$SM14C_W35, order = TRUE, levels = c("None", "Only a little", "Some", "A great deal"))
+
+fb_data$SM14D_W35 <- factor(fb_data$SM14D_W35, order = TRUE, levels = c("None", "Only a little", "Some", "A great deal"))
+
+fb_data$FB1_W35 <- factor(fb_data$FB1_W35, order = TRUE, levels = c("Not well at all", "Not very well", "Somewhat well", "Very well"))
+
+fb_data$FB2_W35 <- factor(fb_data$FB2_W35, order = TRUE, levels = c("None of them", "Some of them", "Most of them", "Almost all of them"))
+
+fb_data$FB3A_W35 <- factor(fb_data$FB3A_W35, order = TRUE, levels = c("None", "A little", "A lot"))
+
+fb_data$FB4A_W35 <- factor(fb_data$FB4A_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$FB4B_W35 <- factor(fb_data$FB4B_W35, order = TRUE, levels = c("Never", "Hardly ever", "Sometimes", "Frequently"))
+
+fb_data$F_AGECAT_FINAL <- factor(fb_data$F_AGECAT_FINAL, order = TRUE, levels = c("18-29", "30-49", "50-64", "65+"))
+
+fb_data$F_EDUCCAT_FINAL <- factor(fb_data$F_EDUCCAT_FINAL, order = TRUE, levels = c("H.S. graduate or less", "Some college", "College graduate+"))
+
+fb_data$F_EDUCCAT2_FINAL <- factor(fb_data$F_EDUCCAT2_FINAL, order = TRUE, levels = c("Less than high school", "High school graduate", "Some college, no degree", "Associate's degree", "College graduate/some postgrad", "Postgraduate"))
+
+fb_data$F_ATTEND_FINAL <- factor(fb_data$F_ATTEND_FINAL, order = TRUE, levels = c("Never", "Seldom", "A few times a year", "Once a week", "More than once a week"))
+
+fb_data$F_INCOME_RECODE_FINAL <- factor(fb_data$F_INCOME_RECODE_FINAL, order = TRUE, levels = c("<$30,000", "$30-$74,999", "$75,000+"))
+
+fb_data$SNSA_W35 <- recode_factor(fb_data$SNSA_W35, "Facebook" = "1", "Not selected" = "0")
+
+fb_data$SNSB_W35 <- recode_factor(fb_data$SNSB_W35, "Twitter" = "1", "Not selected" = "0")
+
+fb_data$SNSE_W35 <- recode_factor(fb_data$SNSE_W35, "Instagram" = "1", "Not selected" = "0")
+
+fb_data$SNSH_W35 <- recode_factor(fb_data$SNSH_W35, "YouTube" = "1", "Not selected" = "0")
+
+fb_data$SNSJ_W35 <- recode_factor(fb_data$SNSJ_W35, "Snapchat" = "1", "Not selected" = "0")
+
+fb_data$SNSL_W35 <- recode_factor(fb_data$SNSL_W35, "Other" = "1", "Not selected" = "0")
+
+fb_data$SNSUSER_W35 <- recode_factor(fb_data$SNSUSER_W35, "Uses Social Media" = "1", "Does not use Social Media" = "0")
+
+fb_data$FB3C1_W35 <- recode_factor(fb_data$FB3C1_W35, "Friended or unfriended certain people" = "1", "Not selected" = "0")
+
+fb_data$FB3C2_W35 <- recode_factor(fb_data$FB3C2_W35, "Liked, shared or commented on certain types of content" = "1", "Not selected" = "0")
+
+fb_data$FB3C3_W35 <- recode_factor(fb_data$FB3C3_W35, "Indicated that you wanted to see less of certain people or types of content" = "1", "Not selected" = "0")
+
+fb_data$FB3C4_W35 <- recode_factor(fb_data$FB3C4_W35, "Changed your privacy settings or ad preference" = "1", "Not selected" = "0")
+
+fb_data$FB3C5_W35 <- recode_factor(fb_data$FB3C5_W35, "Followed or unfollowed certain groups or organizations" = "1", "Not selected" = "0")
+
+fb_data$FB3C6_W35 <- recode_factor(fb_data$FB3C6_W35, "Something else" = "1", "Not selected" = "0")
+
+fb_data$F_INTUSER_FINAL <- recode_factor(fb_data$F_INTUSER_FINAL, "Not Internet User" = "0", "Internet User" = "1")
+
+fb_data$F_VOLSUM_FINAL <- recode_factor(fb_data$F_VOLSUM_FINAL, "No" = "0", "Yes" = "1")
+
+```
+
+```{r}
+#change 'Refused' to NA values 
+
+fb_data[fb_data == "Refused"] <- NA
+fb_data[fb_data == "Don't know/Refused"] <- NA
+fb_data[fb_data == "Don't know/Refused (VOL.)"] <- NA
+fb_data[fb_data == "(VOL) Don't know/Refused"] <- NA
+
+```
+
+```{r}
+#dropped unused levels
+
+droplevels(fb_data, exclude = if(anyNA(levels(fb_data))) NULL else NA)
+
+fb_data$ALG1_W35 <- droplevels(fb_data$ALG1_W35)
+fb_data$TC2B_W35 <- droplevels(fb_data$TC2B_W35)
+fb_data$TC2C_W35 <- droplevels(fb_data$TC2C_W35)
+fb_data$TC3A_W35 <- droplevels(fb_data$TC3A_W35)
+fb_data$TC3B_W35 <- droplevels(fb_data$TC3B_W35)
+fb_data$TC3C_W35 <- droplevels(fb_data$TC3C_W35)
+fb_data$TC6A_W35 <- droplevels(fb_data$TC6A_W35)
+fb_data$TC6B_W35 <- droplevels(fb_data$TC6B_W35)
+fb_data$SM3_W35 <- droplevels(fb_data$SM3_W35)
+fb_data$SM6A_W35 <- droplevels(fb_data$SM6A_W35)
+fb_data$SM6B_W35 <- droplevels(fb_data$SM6B_W35)
+fb_data$SM8A_W35 <- droplevels(fb_data$SM8A_W35)
+fb_data$SM8B_W35 <- droplevels(fb_data$SM8B_W35)
+fb_data$SM8C_W35 <- droplevels(fb_data$SM8C_W35)
+fb_data$SM10A_W35 <- droplevels(fb_data$SM10A_W35)
+fb_data$SM10B_W35 <- droplevels(fb_data$SM10B_W35)
+fb_data$SM10C_W35 <- droplevels(fb_data$SM10C_W35)
+fb_data$SM10D_W35 <- droplevels(fb_data$SM10D_W35)
+fb_data$SM10E_W35 <- droplevels(fb_data$SM10E_W35)
+fb_data$SM11_W35 <- droplevels(fb_data$SM3_W35)
+fb_data$FB3B_W35 <- droplevels(fb_data$FB3B_W35)
+fb_data$FB5A_W35 <- droplevels(fb_data$FB5A_W35)
+fb_data$FB5B_W35 <- droplevels(fb_data$FB5B_W35)
+fb_data$FB5C_W35 <- droplevels(fb_data$FB5C_W35)
+fb_data$FB5D_W35 <- droplevels(fb_data$FB5D_W35)
+fb_data$F_SEX_FINAL <- droplevels(fb_data$F_SEX_FINAL)
+fb_data$F_HISP_RECRUITMENT <- droplevels(fb_data$F_HISP_RECRUITMENT)
+fb_data$F_RACECMB_RECRUITMENT <- droplevels(fb_data$F_RACECMB_RECRUITMENT)
+fb_data$F_RACETHN_RECRUITMENT <- droplevels(fb_data$F_RACETHN_RECRUITMENT)
+fb_data$F_BORN_FINAL <- droplevels(fb_data$F_BORN_FINAL)
+fb_data$F_PARTY_FINAL <- droplevels(fb_data$F_PARTY_FINAL)
+fb_data$F_PARTYLN_FINAL <- droplevels(fb_data$F_PARTYLN_FINAL)
+fb_data$F_REG_FINAL <- droplevels(fb_data$F_REG_FINAL)
+fb_data$F_IDEO_FINAL <- droplevels(fb_data$F_IDEO_FINAL)
+fb_data$F_VOLSUM_FINAL <- droplevels(fb_data$F_VOLSUM_FINAL)
+
+```
+
+```{r}
+#filter data to include only Facebook users
+
+fb_data <- fb_data %>%
+  filter(SNSA_W35 == "1")
+
+```
+
+```{r, results = "hide", cache = TRUE}
+#impute missing data using the mice function
+
+fb_data_cleaned_and_imputed <- mice(fb_data, nnet.MaxNWts = 5000, seed = 26)
+fb_data_cleaned_and_imputed <- complete(fb_data_cleaned_and_imputed)
+
+```
+
+```{r}
+#remove an unnecessary variable and used mode replacement on a variable (SM11_W35) that didn't converge in the previous missing data imputation step
+
+fb_data_cleaned_and_imputed <- fb_data_cleaned_and_imputed %>%
+  select(-F_PARTYLN_FINAL)
+
+fb_data_cleaned_and_imputed$SM11_W35[is.na(fb_data_cleaned_and_imputed$SM11_W35)] <- "Does not provide an accurate picture"
+
+
+#drop the unused levels on the SM11_W35 variable and one other that I missed before
+
+fb_data_cleaned_and_imputed$SM11_W35 <- droplevels(fb_data_cleaned_and_imputed$SM11_W35)
+fb_data_cleaned_and_imputed$F_MARITAL_FINAL <- droplevels(fb_data_cleaned_and_imputed$F_MARITAL_FINAL)
+                                                      
+```
+
+```{r results = "hide"}
+#check to see that everything looked okay
+
+summary(fb_data_cleaned_and_imputed)
+
+```
+
+```{r}
+#save the cleaned and imputed data
+
+save(fb_data_cleaned_and_imputed, file = "FB_RProj_Data_Cleaned_Imputed_2022-08-26.Rdata")
+
+```
+
+
+
+
+
+

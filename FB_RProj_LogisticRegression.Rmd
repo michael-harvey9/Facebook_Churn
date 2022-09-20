@@ -1,0 +1,238 @@
+---
+title: "FB_RProj_LogReg"
+output: word_document
+---
+
+```{r}
+#install and load packages
+
+#install.packages("caTools")
+#install.packages("ROSE")
+
+
+library(tidyverse)
+library(caTools)
+library(caret)
+library(ROSE)
+
+
+```
+
+```{r}
+#load in the datasets
+
+load("FB_Data_Break_2022-09-19.Rdata")
+load("FB_Data_Deleted_2022-09-19.Rdata")
+
+```
+
+```{r}
+#recode the target variable levels
+
+fb_data_break$FB5A_W35 <- factor(fb_data_break$FB5A_W35, levels = c("Have not done this in the past year", "Have done this in the past year"))
+fb_data_break$FB5A_W35 <- recode_factor(fb_data_break$FB5A_W35, "Have not done this in the past year" = 0, "Have done this in the past year" = 1)
+
+```
+
+```{r}
+#split dataset into training and test sets
+
+set.seed(34)
+
+split_break <- sample.split(Y = fb_data_break$FB5A_W35, SplitRatio = .80)
+
+training_set_break <- subset(x = fb_data_break, split_break == TRUE)
+
+test_set_break <- subset(x = fb_data_break, split_break == FALSE)
+
+```
+
+```{r}
+#oversample the minority class and undersample the majority class to address class imbalance in response variable
+
+balanced_training_set_break <- ovun.sample(FB5A_W35 ~ SNSFRA_W35 + FB2_W35 + SM1F_W35 + SM1E_W35 + FB4A_W35 + F_RACECMB_RECRUITMENT + SM1C_W35 + SM8B_W35 + FB4B_W35 + F_RACETHN_RECRUITMENT + TC2B_W35 + FB5D_W35 + SM8C_W35 + F_MARITAL_FINAL + SM6A_W35 + TC2C_W35 + SM9B_W35 + TC4_W35 + SM7_W35 + SM1D_W35 + SM5B_W35 + F_EDUCCAT2_FINAL + F_AGECAT_FINAL + SM12B_W35 + SM2C_W35 + F_INCOME_RECODE_FINAL + SM13C_W35 + FB5C_W35 + F_PARTY_FINAL + SM9A_W35, data = training_set_break, method = "over")$data
+
+```
+
+```{r}
+#train the model with the logistic regression function
+
+fb_model_break <- glm(FB5A_W35 ~ SNSFRA_W35 + FB2_W35 + SM1F_W35 + SM1E_W35 + FB4A_W35 + F_RACECMB_RECRUITMENT + SM1C_W35 + SM8B_W35 + FB4B_W35 + F_RACETHN_RECRUITMENT + TC2B_W35 + FB5D_W35 + SM8C_W35 + F_MARITAL_FINAL + SM6A_W35 + TC2C_W35 + SM9B_W35 + TC4_W35 + SM7_W35 + SM1D_W35 + SM5B_W35 + F_EDUCCAT2_FINAL + F_AGECAT_FINAL + SM12B_W35 + SM2C_W35 + F_INCOME_RECODE_FINAL + SM13C_W35 + FB5C_W35 + F_PARTY_FINAL + SM9A_W35, family = "binomial", data = balanced_training_set_break)
+
+summary(fb_model_break)
+
+```
+
+```{r}
+#use model to predict on the test set
+
+fb_predicted_break <- predict(fb_model_break, test_set_break, type = 'response')
+
+predictions_break <- ifelse(fb_predicted_break > 0.5, 1, 0)
+
+predictions_break <- factor(predictions_break, levels = c(0, 1))
+
+confusionMatrix(predictions_break, test_set_break$FB5A_W35, positive = "1")
+
+```
+
+```{r}
+#plot the confusion matrix 
+
+ConfMat_break <- confusionMatrix(predictions_break, test_set_break$FB5A_W35, positive = "1")
+
+draw_confusion_matrix <- function(ConfMat_break) {
+
+  layout(matrix(c(1,1,2)))
+  par(mar=c(2,2,2,2))
+  plot(c(100, 345), c(300, 450), type = "n", xlab="", ylab="", xaxt='n', yaxt='n')
+  title('Confusion Matrix - Break', cex.main=2)
+
+  # create the matrix 
+  rect(150, 430, 240, 370, col='#3F97D0')
+  text(195, 435, 'Have Not Done', cex=1.2)
+  rect(250, 430, 340, 370, col='#F7AD50')
+  text(295, 435, 'Have Done', cex=1.2)
+  text(125, 370, 'Predicted', cex=1.3, srt=90, font=2)
+  text(245, 450, 'Actual', cex=1.3, font=2)
+  rect(150, 305, 240, 365, col='#F7AD50')
+  rect(250, 305, 340, 365, col='#3F97D0')
+  text(140, 400, 'Have Not Done', cex=1.2, srt=90)
+  text(140, 335, 'Have Done', cex=1.2, srt=90)
+
+  # add in the cm results 
+  res <- as.numeric(ConfMat_break$table)
+  text(195, 400, res[1], cex=1.6, font=2, col='white')
+  text(195, 335, res[2], cex=1.6, font=2, col='white')
+  text(295, 400, res[3], cex=1.6, font=2, col='white')
+  text(295, 335, res[4], cex=1.6, font=2, col='white')
+
+  # add in the specifics 
+  plot(c(100, 0), c(100, 0), type = "n", xlab="", ylab="", main = "Details", xaxt='n', yaxt='n')
+  text(10, 85, names(ConfMat_break$byClass[1]), cex=1.2, font=2)
+  text(10, 70, round(as.numeric(ConfMat_break$byClass[1]), 3), cex=1.2)
+  text(30, 85, names(ConfMat_break$byClass[2]), cex=1.2, font=2)
+  text(30, 70, round(as.numeric(ConfMat_break$byClass[2]), 3), cex=1.2)
+  text(50, 85, names(ConfMat_break$byClass[5]), cex=1.2, font=2)
+  text(50, 70, round(as.numeric(ConfMat_break$byClass[5]), 3), cex=1.2)
+  text(70, 85, names(ConfMat_break$byClass[6]), cex=1.2, font=2)
+  text(70, 70, round(as.numeric(ConfMat_break$byClass[6]), 3), cex=1.2)
+  text(90, 85, names(ConfMat_break$byClass[7]), cex=1.2, font=2)
+  text(90, 70, round(as.numeric(ConfMat_break$byClass[7]), 3), cex=1.2)
+
+  # add in the accuracy information 
+  text(30, 35, names(ConfMat_break$overall[1]), cex=1.5, font=2)
+  text(30, 20, round(as.numeric(ConfMat_break$overall[1]), 3), cex=1.4)
+  text(70, 35, names(ConfMat_break$overall[2]), cex=1.5, font=2)
+  text(70, 20, round(as.numeric(ConfMat_break$overall[2]), 3), cex=1.4)
+}  
+
+draw_confusion_matrix(ConfMat_break)
+
+```
+
+```{r}
+#recode the target variable levels
+
+fb_data_deleted$FB5B_W35 <- factor(fb_data_deleted$FB5B_W35, levels = c("Have not done this in the past year", "Have done this in the past year"))
+fb_data_deleted$FB5B_W35 <- recode_factor(fb_data_deleted$FB5B_W35, "Have not done this in the past year" = 0, "Have done this in the past year" = 1)
+
+```
+
+```{r}
+#split dataset into training and test sets
+
+set.seed(34)
+
+split_deleted <- sample.split(Y = fb_data_deleted$FB5B_W35, SplitRatio = .80)
+
+training_set_deleted <- subset(x = fb_data_deleted, split_deleted == TRUE)
+
+test_set_deleted <- subset(x = fb_data_deleted, split_deleted == FALSE)
+
+```
+
+```{r}
+#oversample the minority class and undersample the majority class to address class imbalance in response variable
+
+balanced_training_set_deleted <- ovun.sample(FB5B_W35 ~ F_AGECAT_FINAL + SNSFRA_W35 + F_RACECMB_RECRUITMENT + SM1F_W35 + FB5D_W35 + FB5C_W35 + TC4_W35 + SNSJ_W35 + FB3C6_W35 + F_RACETHN_RECRUITMENT + F_REG_FINAL + F_MARITAL_FINAL + SM1E_W35 + FB3B_W35 + TC6A_W35 + SM10B_W35 + WEIGHT_W35 + SM9A_W35 + SM2C_W35 + SM14B_W35 + SM8C_W35 + SM6B_W35 + SM1C_W35 + F_INCOME_RECODE_FINAL + F_PARTY_FINAL, data = training_set_deleted, method = "over")$data
+
+```
+
+```{r}
+#train the model with the logistic regression function
+
+fb_model_deleted <- glm(FB5B_W35 ~ F_AGECAT_FINAL + SNSFRA_W35 + F_RACECMB_RECRUITMENT + SM1F_W35 + FB5D_W35 + FB5C_W35 + TC4_W35 + SNSJ_W35 + FB3C6_W35 + F_RACETHN_RECRUITMENT + F_REG_FINAL + F_MARITAL_FINAL + SM1E_W35 + FB3B_W35 + TC6A_W35 + SM10B_W35 + WEIGHT_W35 + SM9A_W35 + SM2C_W35 + SM14B_W35 + SM8C_W35 + SM6B_W35 + SM1C_W35 + F_INCOME_RECODE_FINAL + F_PARTY_FINAL, family = "binomial", data = balanced_training_set_deleted)
+
+summary(fb_model_deleted)
+
+```
+
+```{r}
+#use model to predict on the test set
+
+fb_predicted_deleted <- predict(fb_model_deleted, test_set_deleted, type = 'response')
+
+predictions_deleted <- ifelse(fb_predicted_deleted > 0.5, 1, 0)
+
+predictions_deleted <- factor(predictions_deleted, levels = c(0, 1))
+
+confusionMatrix(predictions_deleted, test_set_deleted$FB5B_W35, positive = "1")
+
+```
+
+```{r}
+#plot the confusion matrix 
+
+ConfMat_deleted <- confusionMatrix(predictions_deleted, test_set_deleted$FB5B_W35, positive = "1")
+
+draw_confusion_matrix <- function(ConfMat_deleted) {
+
+  layout(matrix(c(1,1,2)))
+  par(mar=c(2,2,2,2))
+  plot(c(100, 345), c(300, 450), type = "n", xlab="", ylab="", xaxt='n', yaxt='n')
+  title('Confusion Matrix - Deleted', cex.main=2)
+
+  # create the matrix 
+  rect(150, 430, 240, 370, col='#3F97D0')
+  text(195, 435, 'Have Not Done', cex=1.2)
+  rect(250, 430, 340, 370, col='#F7AD50')
+  text(295, 435, 'Have Done', cex=1.2)
+  text(125, 370, 'Predicted', cex=1.3, srt=90, font=2)
+  text(245, 450, 'Actual', cex=1.3, font=2)
+  rect(150, 305, 240, 365, col='#F7AD50')
+  rect(250, 305, 340, 365, col='#3F97D0')
+  text(140, 400, 'Have Not Done', cex=1.2, srt=90)
+  text(140, 335, 'Have Done', cex=1.2, srt=90)
+
+  # add in the cm results 
+  res <- as.numeric(ConfMat_break$table)
+  text(195, 400, res[1], cex=1.6, font=2, col='white')
+  text(195, 335, res[2], cex=1.6, font=2, col='white')
+  text(295, 400, res[3], cex=1.6, font=2, col='white')
+  text(295, 335, res[4], cex=1.6, font=2, col='white')
+
+  # add in the specifics 
+  plot(c(100, 0), c(100, 0), type = "n", xlab="", ylab="", main = "Details", xaxt='n', yaxt='n')
+  text(10, 85, names(ConfMat_deleted$byClass[1]), cex=1.2, font=2)
+  text(10, 70, round(as.numeric(ConfMat_deleted$byClass[1]), 3), cex=1.2)
+  text(30, 85, names(ConfMat_deleted$byClass[2]), cex=1.2, font=2)
+  text(30, 70, round(as.numeric(ConfMat_deleted$byClass[2]), 3), cex=1.2)
+  text(50, 85, names(ConfMat_deleted$byClass[5]), cex=1.2, font=2)
+  text(50, 70, round(as.numeric(ConfMat_deleted$byClass[5]), 3), cex=1.2)
+  text(70, 85, names(ConfMat_deleted$byClass[6]), cex=1.2, font=2)
+  text(70, 70, round(as.numeric(ConfMat_deleted$byClass[6]), 3), cex=1.2)
+  text(90, 85, names(ConfMat_deleted$byClass[7]), cex=1.2, font=2)
+  text(90, 70, round(as.numeric(ConfMat_deleted$byClass[7]), 3), cex=1.2)
+
+  # add in the accuracy information 
+  text(30, 35, names(ConfMat_deleted$overall[1]), cex=1.5, font=2)
+  text(30, 20, round(as.numeric(ConfMat_deleted$overall[1]), 3), cex=1.4)
+  text(70, 35, names(ConfMat_deleted$overall[2]), cex=1.5, font=2)
+  text(70, 20, round(as.numeric(ConfMat_deleted$overall[2]), 3), cex=1.4)
+}  
+
+draw_confusion_matrix(ConfMat_deleted)
+
+```
+
